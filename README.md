@@ -56,8 +56,8 @@
 
         <span class="cat-label">3. GRUPPENFÜHRER (60 FRAGEN)</span>
         <div class="part-row">
-            <button class="menu-btn" onclick="preStart('gruppenfuehrer', 1)">Teil 1 (1-30)</button>
-            <button class="menu-btn" onclick="preStart('gruppenfuehrer', 2)">Teil 2 (31-60)</button>
+            <button class="menu-btn" onclick="preStart('gruppenfuehrer', 1)">Teil 1</button>
+            <button class="menu-btn" onclick="preStart('gruppenfuehrer', 2)">Teil 2</button>
         </div>
         
         <hr>
