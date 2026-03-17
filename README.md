@@ -7,31 +7,22 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        /* Mobile Optimierung */
         * { box-sizing: border-box; }
         body { font-family: sans-serif; line-height: 1.4; padding: 10px; background: #f0f2f5; margin: 0; }
         .container { max-width: 100%; margin: auto; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        
         h2 { color: #d32f2f; margin-top: 0; text-align: center; font-size: 1.5em; }
         .progress { font-size: 0.9em; color: #666; margin-bottom: 10px; font-weight: bold; }
         .question-text { font-weight: bold; margin-bottom: 15px; display: block; font-size: 1.1em; white-space: pre-wrap; }
-        
-        /* Größere Klickflächen für Handys */
         .option { display: block; background: #f8f9fa; margin-bottom: 8px; padding: 12px 10px 12px 45px; border-radius: 8px; cursor: pointer; position: relative; border: 1px solid #ddd; min-height: 45px; }
         .option input { position: absolute; left: 12px; top: 12px; width: 22px; height: 22px; }
-        
         button { background: #d32f2f; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; margin-top: 10px; }
-        
-        /* Menü-Grid */
         .part-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
         .part-row-tri { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-bottom: 15px; }
         .menu-btn { background: #444; margin-bottom: 0; font-size: 0.9em; padding: 12px 5px; }
-        
         #feedback { margin-top: 15px; padding: 12px; border-radius: 6px; display: none; font-weight: bold; text-align: center; }
         .correct { background: #d4edda; color: #155724; }
         .wrong { background: #f8d7da; color: #721c24; }
         #next-btn { background: #28a745; display: none; }
-        
         .leaderboard { margin-top: 20px; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #ddd; }
         .entry { padding: 10px 0; border-bottom: 1px solid #ddd; font-size: 0.85em; }
         .score-info { color: #555; margin-top: 4px; display: block; font-size: 0.85em; line-height: 1.3; }
@@ -46,7 +37,6 @@
     <div id="login-area">
         <h2>Feuerwehr Login</h2>
         <input type="text" id="user-name" placeholder="Dein Name..." style="width:100%; padding:12px; margin-bottom:15px; border-radius:8px; border:1px solid #ccc; box-sizing: border-box; font-size: 16px;">
-        
         <div id="menu">
             <span class="cat-label">1. MANNSCHAFT (90 FRAGEN)</span>
             <div class="part-row-tri">
@@ -54,13 +44,11 @@
                 <button class="menu-btn" onclick="preStart('mannschaft', 2)">Teil 2</button>
                 <button class="menu-btn" onclick="preStart('mannschaft', 3)">Teil 3</button>
             </div>
-
             <span class="cat-label">2. MASCHINIST (60 FRAGEN)</span>
             <div class="part-row">
                 <button class="menu-btn" onclick="preStart('maschinist', 1)">Teil 1</button>
                 <button class="menu-btn" onclick="preStart('maschinist', 2)">Teil 2</button>
             </div>
-
             <span class="cat-label">3. GRUPPENFÜHRER (60 FRAGEN)</span>
             <div class="part-row">
                 <button class="menu-btn" onclick="preStart('gruppenfuehrer', 1)">Teil 1</button>
@@ -91,7 +79,6 @@
 </div>
 
 <script>
-    // Konfiguration bleibt identisch
     const firebaseConfig = {
         apiKey: "AIzaSyCs_FBU4LD6SWrNqgTEJgYV_RpP5R_W0IE",
         databaseURL: "https://las-gold-default-rtdb.europe-west1.firebasedatabase.app/",
@@ -108,7 +95,6 @@
     let deviceID = localStorage.getItem("quiz_device_id") || 'dev_' + Math.random().toString(36).substr(2, 9);
     localStorage.setItem("quiz_device_id", deviceID);
 
-    // Deine Katalog-Logik
     const catalogs = {
         mannschaft: [{ id: 1, q: " Wer ist nach dem Feuerwehrgesetz Baden-Württemberg für die Aufstellung, Ausrüstung und Unterhaltung der Feuerwehr verantwortlich?", o: {a: "Bund", b: "Land", c: "Kreis", d: "Gemeinde", e: "Kommandant"}, a: ["d"] },
         { id: 2, q: " Welches sind Rechtsgrundlagen der Feuerwehr?", o: {a: "Bürgerliches Gesetzbuch", b: "Feuerwehrgesetz Baden-Württemberg", c: "Feuerwehrsatzung der Gemeinde", d: "Landesverfassung Baden-Württemberg"}, a: ["b", "c"] },
@@ -330,7 +316,6 @@
     function preStart(key, part) {
         const nameInput = document.getElementById("user-name").value.trim();
         if (nameInput === "") { alert("Bitte gib zuerst deinen Namen ein!"); return; }
-        
         currentPlayer = nameInput;
         currentCategory = key;
         currentPart = part;
@@ -389,16 +374,26 @@
 
     function finishQuiz() {
         const total = currentQuestions.length;
+        const wrong = total - score;
         const percent = Math.round((score / total) * 100);
         const datum = new Date().toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
         
-        document.getElementById("quiz-box").innerHTML = `
+        document.getElementById("progress").style.display = "none";
+        document.getElementById("abort-btn").style.display = "none";
+        const quizBox = document.getElementById("quiz-box");
+        quizBox.innerHTML = `
             <div class="result-card">
-                <h3>Ergebnis: Teil ${currentPart}</h3>
-                <div style="font-size: 2.5em; font-weight: bold; color: ${percent >= 50 ? '#28a745' : '#d32f2f'};">${percent}%</div>
-                <p>Gespeichert für ${currentPlayer}</p>
+                <h3 style="color: #d32f2f;">Ergebnis: Teil ${currentPart}</h3>
+                <p style="font-size: 1.2em; margin: 10px 0;">
+                    ✅ Richtig: <b>${score}</b><br>
+                    ❌ Falsch: <b>${wrong}</b>
+                </p>
+                <div style="font-size: 2.5em; font-weight: bold; color: ${percent >= 50 ? '#28a745' : '#d32f2f'}; margin: 15px 0;">
+                    ${percent}%
+                </div>
+                <p style="color: #666; font-size: 0.9em;">Dein Ergebnis wurde gespeichert.</p>
                 <button onclick="showGlobalLeaderboard()">Zur Bestenliste</button>
-                <button style="background:#666; margin-top:10px;" onclick="location.reload()">Menü</button>
+                <button style="background:#666; margin-top:10px;" onclick="location.reload()">Zum Hauptmenü</button>
             </div>
         `;
 
@@ -421,7 +416,6 @@
         document.getElementById("login-area").style.display = "none";
         document.getElementById("quiz-area").style.display = "none";
         document.getElementById("leaderboard-view").style.display = "block";
-
         database.ref('leaderboard').once('value', (snapshot) => {
             const allData = snapshot.val();
             let html = "";
