@@ -3,145 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Feuerwehr Quiz Mobile</title>
+    <title>Feuerwehr Quiz - Mobile</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        /* Mobile-First Basis-Styles */
+        /* Mobile Optimierung */
         * { box-sizing: border-box; }
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            line-height: 1.5; 
-            padding: 10px; 
-            background: #f4f4f9; 
-            margin: 0;
-            color: #333;
-        }
-        .container { 
-            max-width: 100%; 
-            margin: auto; 
-            background: white; 
-            padding: 15px; 
-            border-radius: 15px; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
-        }
-        h2 { color: #d32f2f; text-align: center; margin-top: 5px; font-size: 1.4em; }
+        body { font-family: sans-serif; line-height: 1.4; padding: 10px; background: #f0f2f5; margin: 0; }
+        .container { max-width: 100%; margin: auto; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         
-        /* Eingabefelder & Buttons für Touch optimiert */
-        input[type="text"] {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 15px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            font-size: 16px; /* Verhindert Auto-Zoom bei iOS Fokus */
-        }
+        h2 { color: #d32f2f; margin-top: 0; text-align: center; font-size: 1.5em; }
+        .progress { font-size: 0.9em; color: #666; margin-bottom: 10px; font-weight: bold; }
+        .question-text { font-weight: bold; margin-bottom: 15px; display: block; font-size: 1.1em; white-space: pre-wrap; }
         
-        button { 
-            background: #d32f2f; 
-            color: white; 
-            border: none; 
-            padding: 15px 10px; 
-            border-radius: 10px; 
-            cursor: pointer; 
-            width: 100%; 
-            font-size: 16px; 
-            font-weight: bold; 
-            margin-bottom: 10px;
-            touch-action: manipulation; /* Optimiert Klick-Reaktion auf Handys */
-        }
+        /* Größere Klickflächen für Handys */
+        .option { display: block; background: #f8f9fa; margin-bottom: 8px; padding: 12px 10px 12px 45px; border-radius: 8px; cursor: pointer; position: relative; border: 1px solid #ddd; min-height: 45px; }
+        .option input { position: absolute; left: 12px; top: 12px; width: 22px; height: 22px; }
         
-        .menu-btn { background: #4a4a4a; margin-bottom: 8px; font-size: 0.95em; }
-        .cat-label { font-weight: bold; margin: 15px 0 8px 0; display: block; color: #555; font-size: 0.9em; text-transform: uppercase; }
-
-        /* Grid für die Buttons auf kleinen Bildschirmen */
-        .grid-buttons {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 8px;
-            margin-bottom: 15px;
-        }
-
-        /* Quiz-Elemente */
-        .question-text { font-weight: bold; font-size: 1.1em; display: block; margin-bottom: 15px; }
-        .option { 
-            display: flex; 
-            align-items: center;
-            background: #fff; 
-            margin-bottom: 10px; 
-            padding: 12px; 
-            border-radius: 10px; 
-            border: 2px solid #eee;
-            transition: 0.2s;
-        }
-        .option input { width: 22px; height: 22px; margin-right: 12px; flex-shrink: 0; }
+        button { background: #d32f2f; color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; margin-top: 10px; }
         
-        #feedback { padding: 12px; border-radius: 10px; margin: 10px 0; font-weight: bold; text-align: center; }
-        .correct { background: #e8f5e9; color: #2e7d32; border: 1px solid #2e7d32; }
-        .wrong { background: #ffebee; color: #c62828; border: 1px solid #c62828; }
-
-        /* Bestenliste */
-        .leaderboard { margin-top: 15px; background: #fafafa; padding: 10px; border-radius: 10px; border: 1px solid #ddd; }
-        .entry { padding: 12px 0; border-bottom: 1px dotted #ccc; }
-        .score-info { display: block; font-size: 0.8em; color: #777; line-height: 1.3; }
-        .score-bold { display: block; font-weight: bold; color: #d32f2f; margin-top: 3px; }
-
-        /* Result Card */
-        .result-card { text-align: center; padding: 20px; }
+        /* Menü-Grid */
+        .part-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+        .part-row-tri { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-bottom: 15px; }
+        .menu-btn { background: #444; margin-bottom: 0; font-size: 0.9em; padding: 12px 5px; }
+        
+        #feedback { margin-top: 15px; padding: 12px; border-radius: 6px; display: none; font-weight: bold; text-align: center; }
+        .correct { background: #d4edda; color: #155724; }
+        .wrong { background: #f8d7da; color: #721c24; }
+        #next-btn { background: #28a745; display: none; }
+        
+        .leaderboard { margin-top: 20px; background: #f8f9fa; padding: 10px; border-radius: 8px; border: 1px solid #ddd; }
+        .entry { padding: 10px 0; border-bottom: 1px solid #ddd; font-size: 0.85em; }
+        .score-info { color: #555; margin-top: 4px; display: block; font-size: 0.85em; line-height: 1.3; }
+        .score-bold { font-weight: bold; color: #d32f2f; display: block; margin-top: 4px; }
+        .cat-label { font-weight: bold; margin-top: 15px; display: block; color: #333; font-size: 0.9em; }
+        .result-card { text-align: center; padding: 15px; border: 2px solid #d32f2f; border-radius: 10px; background: #fff; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div id="login-area">
-        <h2>🚒 Feuerwehr Quiz</h2>
-        <input type="text" id="user-name" placeholder="Dein Name für die Bestenliste...">
+        <h2>Feuerwehr Login</h2>
+        <input type="text" id="user-name" placeholder="Dein Name..." style="width:100%; padding:12px; margin-bottom:15px; border-radius:8px; border:1px solid #ccc; box-sizing: border-box; font-size: 16px;">
         
         <div id="menu">
-            <span class="cat-label">1. Mannschaft (90 Fragen)</span>
-            <div class="grid-buttons">
+            <span class="cat-label">1. MANNSCHAFT (90 FRAGEN)</span>
+            <div class="part-row-tri">
                 <button class="menu-btn" onclick="preStart('mannschaft', 1)">Teil 1</button>
                 <button class="menu-btn" onclick="preStart('mannschaft', 2)">Teil 2</button>
                 <button class="menu-btn" onclick="preStart('mannschaft', 3)">Teil 3</button>
             </div>
 
-            <span class="cat-label">2. Maschinist (60 Fragen)</span>
-            <div class="grid-buttons">
+            <span class="cat-label">2. MASCHINIST (60 FRAGEN)</span>
+            <div class="part-row">
                 <button class="menu-btn" onclick="preStart('maschinist', 1)">Teil 1</button>
                 <button class="menu-btn" onclick="preStart('maschinist', 2)">Teil 2</button>
             </div>
 
-            <span class="cat-label">3. Gruppenführer (60 Fragen)</span>
-            <div class="grid-buttons">
-                <button class="menu-btn" onclick="preStart('gruppenfuehrer', 1)">Teil 1</button>
-                <button class="menu-btn" onclick="preStart('gruppenfuehrer', 2)">Teil 2</button>
+            <span class="cat-label">3. GRUPPENFÜHRER (60 FRAGEN)</span>
+            <div class="part-row">
+                <button class="menu-btn" onclick="preStart('gruppenfuehrer', 1)">Teil 1 (1-30)</button>
+                <button class="menu-btn" onclick="preStart('gruppenfuehrer', 2)">Teil 2 (31-60)</button>
             </div>
-            
-            <button style="background:#2c3e50; margin-top: 10px;" onclick="showGlobalLeaderboard()">🏆 Bestenliste</button>
+            <hr style="border:0; border-top:1px solid #ddd; margin: 20px 0;">
+            <button style="background: #2c3e50;" onclick="showGlobalLeaderboard()">🏆 Bestenliste ansehen</button>
         </div>
     </div>
 
     <div id="quiz-area" style="display:none;">
-        <div id="progress" style="font-size: 0.8em; color: #888; margin-bottom: 5px;"></div>
+        <div id="progress" class="progress"></div>
         <div id="quiz-box">
             <span class="question-text" id="question-display"></span>
             <div id="options-display"></div>
-            <button id="check-btn" onclick="checkAnswer()">Prüfen</button>
-            <div id="feedback" style="display:none;"></div>
-            <button id="next-btn" style="display:none; background:#2e7d32;" onclick="nextQuestion()">Weiter</button>
+            <button id="check-btn" onclick="checkAnswer()">Antwort prüfen</button>
+            <div id="feedback"></div>
+            <button id="next-btn" onclick="nextQuestion()">Nächste Frage</button>
         </div>
-        <button id="abort-btn" style="background:none; color:#999; text-decoration:underline; font-size: 0.8em;" onclick="location.reload()">Abbrechen & Menü</button>
+        <button id="abort-btn" style="background:#666; margin-top:30px;" onclick="location.reload()">Abbrechen / Menü</button>
     </div>
 
     <div id="leaderboard-view" style="display:none;">
-        <h2>🏆 Bestenliste</h2>
-        <div id="leaderboard-list">Lade...</div>
-        <button style="background:#444; margin-top:20px;" onclick="location.reload()">Zurück</button>
+        <h2>🏆 Gesamt-Bestenliste</h2>
+        <div id="leaderboard-list">Lade Daten...</div>
+        <button style="background:#444;" onclick="location.reload()">Zurück zum Menü</button>
     </div>
 </div>
 
 <script>
-    // Firebase Konfiguration (Deine Daten übernommen)
+    // Konfiguration bleibt identisch
     const firebaseConfig = {
         apiKey: "AIzaSyCs_FBU4LD6SWrNqgTEJgYV_RpP5R_W0IE",
         databaseURL: "https://las-gold-default-rtdb.europe-west1.firebasedatabase.app/",
@@ -155,11 +105,10 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
-    // Device ID für Speicherung
     let deviceID = localStorage.getItem("quiz_device_id") || 'dev_' + Math.random().toString(36).substr(2, 9);
     localStorage.setItem("quiz_device_id", deviceID);
 
-    // Beispieldaten (Hier musst du deine echten Fragen einfügen)
+    // Deine Katalog-Logik
     const catalogs = {
         mannschaft: [{ id: 1, q: " Wer ist nach dem Feuerwehrgesetz Baden-Württemberg für die Aufstellung, Ausrüstung und Unterhaltung der Feuerwehr verantwortlich?", o: {a: "Bund", b: "Land", c: "Kreis", d: "Gemeinde", e: "Kommandant"}, a: ["d"] },
         { id: 2, q: " Welches sind Rechtsgrundlagen der Feuerwehr?", o: {a: "Bürgerliches Gesetzbuch", b: "Feuerwehrgesetz Baden-Württemberg", c: "Feuerwehrsatzung der Gemeinde", d: "Landesverfassung Baden-Württemberg"}, a: ["b", "c"] },
@@ -380,19 +329,26 @@
 
     function preStart(key, part) {
         const nameInput = document.getElementById("user-name").value.trim();
-        if (nameInput === "") { alert("Bitte Namen eingeben!"); return; }
+        if (nameInput === "") { alert("Bitte gib zuerst deinen Namen ein!"); return; }
         
         currentPlayer = nameInput;
         currentCategory = key;
         currentPart = part;
 
-        // Logik für Fragen-Slice (wie im Original)
-        let startIdx = 0, endIdx = catalogs[key].length;
-        // ... (Deine Slice-Logik hier einfügen falls nötig)
+        let startIdx, endIdx;
+        if (key === 'gruppenfuehrer') {
+            startIdx = (part === 1) ? 0 : 30;
+            endIdx = (part === 1) ? 30 : 60;
+        } else {
+            const totalQuestions = catalogs[key].length;
+            const partsCount = (key === 'mannschaft' ? 3 : 2);
+            const perPart = Math.ceil(totalQuestions / partsCount);
+            startIdx = (part - 1) * perPart;
+            endIdx = startIdx + perPart;
+        }
 
         currentQuestions = catalogs[key].slice(startIdx, endIdx).sort(() => Math.random() - 0.5);
         currentIndex = 0; score = 0;
-        
         document.getElementById("login-area").style.display = "none";
         document.getElementById("quiz-area").style.display = "block";
         showQuestion();
@@ -400,11 +356,11 @@
 
     function showQuestion() {
         const q = currentQuestions[currentIndex];
-        document.getElementById("progress").innerText = `Frage ${currentIndex+1} von ${currentQuestions.length}`;
+        document.getElementById("progress").innerText = `Frage ${currentIndex+1}/${currentQuestions.length}`;
         document.getElementById("question-display").innerText = q.q;
         let html = "";
         for (let k in q.o) {
-            html += `<label class="option"><input type="checkbox" name="ans" value="${k}"><span>${k.toUpperCase()}: ${q.o[k]}</span></label>`;
+            html += `<label class="option"><input type="checkbox" name="ans" value="${k}">${k.toUpperCase()}: ${q.o[k]}</label>`;
         }
         document.getElementById("options-display").innerHTML = html;
         document.getElementById("feedback").style.display = "none";
@@ -417,17 +373,10 @@
         const q = currentQuestions[currentIndex];
         const sel = Array.from(document.querySelectorAll('input[name="ans"]:checked')).map(c => c.value);
         const isCorrect = sel.length === q.a.length && sel.every(v => q.a.includes(v));
-        
         const fb = document.getElementById("feedback");
         fb.style.display = "block";
-        if (isCorrect) { 
-            score++; 
-            fb.innerText = "✅ Richtig!"; 
-            fb.className = "correct"; 
-        } else { 
-            fb.innerText = "❌ Falsch! Richtig wäre: " + q.a.join(", ").toUpperCase(); 
-            fb.className = "wrong"; 
-        }
+        if (isCorrect) { score++; fb.innerText = "RICHTIG!"; fb.className = "correct"; }
+        else { fb.innerText = "FALSCH! Richtig: " + q.a.join(",").toUpperCase(); fb.className = "wrong"; }
         document.getElementById("check-btn").style.display = "none";
         document.getElementById("next-btn").style.display = "block";
     }
@@ -441,25 +390,27 @@
     function finishQuiz() {
         const total = currentQuestions.length;
         const percent = Math.round((score / total) * 100);
-        const datum = new Date().toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const datum = new Date().toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
         
         document.getElementById("quiz-box").innerHTML = `
             <div class="result-card">
-                <h3>Ergebnis Teil ${currentPart}</h3>
-                <div style="font-size: 3em; font-weight: bold; color: #d32f2f;">${percent}%</div>
-                <p>${score} von ${total} richtig beantwortet.</p>
-                <button onclick="location.reload()">Zum Hauptmenü</button>
+                <h3>Ergebnis: Teil ${currentPart}</h3>
+                <div style="font-size: 2.5em; font-weight: bold; color: ${percent >= 50 ? '#28a745' : '#d32f2f'};">${percent}%</div>
+                <p>Gespeichert für ${currentPlayer}</p>
+                <button onclick="showGlobalLeaderboard()">Zur Bestenliste</button>
+                <button style="background:#666; margin-top:10px;" onclick="location.reload()">Menü</button>
             </div>
         `;
 
-        // Firebase Sync
         const userRef = database.ref('leaderboard/' + deviceID + '/' + currentCategory);
         userRef.once('value', (snapshot) => {
             let data = snapshot.val() || { name: currentPlayer };
             if(!data.counts) data.counts = {t1:0, t2:0, t3:0};
+            if(!data.dates) data.dates = {t1:'', t2:'', t3:''};
             data.name = currentPlayer;
             data['t' + currentPart] = Math.max(data['t' + currentPart] || 0, percent);
             data.counts['t' + currentPart] = (data.counts['t' + currentPart] || 0) + 1;
+            data.dates['t' + currentPart] = datum;
             const div = (currentCategory === 'mannschaft') ? 3 : 2;
             data.total = Math.round(((data.t1 || 0) + (data.t2 || 0) + (data.t3 || 0)) / div);
             userRef.set(data);
@@ -468,20 +419,27 @@
 
     function showGlobalLeaderboard() {
         document.getElementById("login-area").style.display = "none";
+        document.getElementById("quiz-area").style.display = "none";
         document.getElementById("leaderboard-view").style.display = "block";
 
         database.ref('leaderboard').once('value', (snapshot) => {
             const allData = snapshot.val();
             let html = "";
             ['mannschaft', 'maschinist', 'gruppenfuehrer'].forEach(cat => {
-                html += `<div class="leaderboard"><h4>🚒 ${cat.toUpperCase()}</h4>`;
+                html += `<div class="leaderboard"><h3>🚒 ${cat.toUpperCase()}</h3>`;
                 let entries = [];
                 for (let id in allData) { if (allData[id][cat]) entries.push(allData[id][cat]); }
                 entries.sort((a, b) => b.total - a.total);
-                
                 entries.forEach((e, i) => {
-                    html += `<div class="entry"><b>${i+1}. ${e.name}</b> <span style="float:right">${e.total || 0}%</span>`;
-                    html += `<span class="score-info">Teil 1: ${e.t1||0}% | Teil 2: ${e.t2||0}%</span></div>`;
+                    html += `<div class="entry"><b>${i+1}. ${e.name}</b><br>`;
+                    [1, 2, 3].forEach(p => {
+                        if(cat !== 'mannschaft' && p === 3) return;
+                        const d = (e.dates && e.dates['t'+p]) ? e.dates['t'+p] : '-';
+                        const c = (e.counts && e.counts['t'+p]) ? e.counts['t'+p] : 0;
+                        const s = e['t'+p] || 0;
+                        html += `<span class="score-info">Teil ${p}: ${s}% (${c} Versuche, am ${d})</span>`;
+                    });
+                    html += `<span class="score-bold">Gesamt-Schnitt: ${e.total || 0}%</span></div>`;
                 });
                 html += `</div>`;
             });
