@@ -63,8 +63,8 @@
 
             <span class="cat-label">3. GRUPPENFÜHRER (60 FRAGEN)</span>
             <div class="part-row">
-                <button class="menu-btn" onclick="preStart('gruppenfuehrer', 1)">Teil 1 (1-30)</button>
-                <button class="menu-btn" onclick="preStart('gruppenfuehrer', 2)">Teil 2 (31-60)</button>
+                <button class="menu-btn" onclick="preStart('gruppenfuehrer', 1)">Teil 1</button>
+                <button class="menu-btn" onclick="preStart('gruppenfuehrer', 2)">Teil 2</button>
             </div>
             <hr style="border:0; border-top:1px solid #ddd; margin: 20px 0;">
             <button style="background: #2c3e50;" onclick="showGlobalLeaderboard()">🏆 Bestenliste ansehen</button>
