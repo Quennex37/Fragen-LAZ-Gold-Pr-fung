@@ -30,7 +30,7 @@
         .cat-label { font-weight: bold; margin-top: 15px; display: block; color: #333; font-size: 0.9em; }
         .result-card { text-align: center; padding: 15px; border: 2px solid #d32f2f; border-radius: 10px; background: #fff; }
         .hidden { display: none !important; }
-        .logout-btn { background: #7f8c8d; font-size: 0.7em; padding: 5px; margin-top: 20px; width: auto; display: block; margin-left: auto; margin-right: auto; }
+        .logout-btn { background: #7f8c8d; font-size: 0.7em; padding: 8px; margin-top: 20px; width: auto; display: block; margin-left: auto; margin-right: auto; }
     </style>
 </head>
 <body>
@@ -59,8 +59,8 @@
             </div>
             <span class="cat-label">3. GRUPPENFÜHRER (60 FRAGEN)</span>
             <div class="part-row">
-                <button class="menu-btn" onclick="preStart('gruppenfuehrer', 1)">Teil 1 (1-30)</button>
-                <button class="menu-btn" onclick="preStart('gruppenfuehrer', 2)">Teil 2 (31-60)</button>
+                <button class="menu-btn" onclick="preStart('gruppenfuehrer', 1)">Teil 1</button>
+                <button class="menu-btn" onclick="preStart('gruppenfuehrer', 2)">Teil 2</button>
             </div>
             <hr style="border:0; border-top:1px solid #ddd; margin: 20px 0;">
             <button style="background: #2c3e50;" onclick="showGlobalLeaderboard()">🏆 Bestenliste ansehen</button>
@@ -77,7 +77,7 @@
             <div id="feedback"></div>
             <button id="next-btn" onclick="nextQuestion()">Nächste Frage</button>
         </div>
-        <button id="abort-btn" style="background:#666; margin-top:30px;" onclick="location.reload()">Abbrechen / Menü</button>
+        <button id="abort-btn" style="background:#666; margin-top:30px;" onclick="confirmAbort()">Abbrechen / Menü</button>
     </div>
 
     <div id="leaderboard-view" style="display:none;">
@@ -107,7 +107,6 @@
     let deviceID = localStorage.getItem("quiz_device_id") || 'dev_' + Math.random().toString(36).substr(2, 9);
     localStorage.setItem("quiz_device_id", deviceID);
 
-    // Passwort-Logik
     window.onload = function() {
         const savedPw = localStorage.getItem('active_pw');
         if (savedPw) {
@@ -132,9 +131,19 @@
         document.getElementById('portal-title').innerText = "Feuerwehr " + name;
     }
 
+    // Sicherheitsabfrage beim Ausloggen
     function logout() {
-        localStorage.removeItem('active_pw');
-        location.reload();
+        if (confirm("Möchtest du dich wirklich abmelden und zum Passwort-Login zurückkehren?")) {
+            localStorage.removeItem('active_pw');
+            location.reload();
+        }
+    }
+
+    // Sicherheitsabfrage beim Abbrechen des Quizzes
+    function confirmAbort() {
+        if (confirm("Möchtest du das Quiz wirklich abbrechen? Dein Fortschritt wird nicht gespeichert.")) {
+            location.reload();
+        }
     }
 
     function backToMenu() {
@@ -424,7 +433,7 @@
         const wrong = total - score;
         const percent = Math.round((score / total) * 100);
         const datum = new Date().toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
-        const activePw = localStorage.getItem('active_pw'); // Raum merken
+        const activePw = localStorage.getItem('active_pw');
 
         document.getElementById("progress").style.display = "none";
         document.getElementById("abort-btn").style.display = "none";
@@ -453,7 +462,7 @@
             if(!data.lasts) data.lasts = {t1:0, t2:0, t3:0}; 
             
             data.name = currentPlayer;
-            data.room = activePw; // Raum-Zuordnung speichern
+            data.room = activePw;
             data['t' + currentPart] = Math.max(data['t' + currentPart] || 0, percent);
             data.counts['t' + currentPart] = (data.counts['t' + currentPart] || 0) + 1;
             data.dates['t' + currentPart] = datum;
@@ -478,7 +487,6 @@
                 html += `<div class="leaderboard"><h3>🚒 ${cat.toUpperCase()}</h3>`;
                 let entries = [];
                 for (let id in allData) { 
-                    // FILTER: Nur Einträge anzeigen, die zum aktuellen Passwort-Raum gehören
                     if (allData[id][cat] && allData[id][cat].room === activePw) {
                         entries.push(allData[id][cat]);
                     } 
