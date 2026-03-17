@@ -29,13 +29,21 @@
         .score-bold { font-weight: bold; color: #d32f2f; display: block; margin-top: 4px; }
         .cat-label { font-weight: bold; margin-top: 15px; display: block; color: #333; font-size: 0.9em; }
         .result-card { text-align: center; padding: 15px; border: 2px solid #d32f2f; border-radius: 10px; background: #fff; }
+        .hidden { display: none !important; }
+        .logout-btn { background: #7f8c8d; font-size: 0.7em; padding: 5px; margin-top: 20px; width: auto; display: block; margin-left: auto; margin-right: auto; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="login-area">
-        <h2>Feuerwehr Login</h2>
+    <div id="password-area">
+        <h2>Feuerwehr Zugang</h2>
+        <input type="password" id="pw-input" placeholder="Passwort..." style="width:100%; padding:12px; margin-bottom:15px; border-radius:8px; border:1px solid #ccc; font-size: 16px;">
+        <button onclick="checkPassword()">Einloggen</button>
+    </div>
+
+    <div id="login-area" class="hidden">
+        <h2 id="portal-title">Feuerwehr Login</h2>
         <input type="text" id="user-name" placeholder="Dein Name..." style="width:100%; padding:12px; margin-bottom:15px; border-radius:8px; border:1px solid #ccc; box-sizing: border-box; font-size: 16px;">
         <div id="menu">
             <span class="cat-label">1. MANNSCHAFT (90 FRAGEN)</span>
@@ -51,11 +59,12 @@
             </div>
             <span class="cat-label">3. GRUPPENFÜHRER (60 FRAGEN)</span>
             <div class="part-row">
-                <button class="menu-btn" onclick="preStart('gruppenfuehrer', 1)">Teil 1</button>
-                <button class="menu-btn" onclick="preStart('gruppenfuehrer', 2)">Teil 2</button>
+                <button class="menu-btn" onclick="preStart('gruppenfuehrer', 1)">Teil 1 (1-30)</button>
+                <button class="menu-btn" onclick="preStart('gruppenfuehrer', 2)">Teil 2 (31-60)</button>
             </div>
             <hr style="border:0; border-top:1px solid #ddd; margin: 20px 0;">
             <button style="background: #2c3e50;" onclick="showGlobalLeaderboard()">🏆 Bestenliste ansehen</button>
+            <button class="logout-btn" onclick="logout()">Zurück zur Anmeldung</button>
         </div>
     </div>
 
@@ -72,9 +81,9 @@
     </div>
 
     <div id="leaderboard-view" style="display:none;">
-        <h2>🏆 Gesamt-Bestenliste</h2>
+        <h2 id="leaderboard-title">🏆 Gesamt-Bestenliste</h2>
         <div id="leaderboard-list">Lade Daten...</div>
-        <button style="background:#444;" onclick="location.reload()">Zurück zum Menü</button>
+        <button style="background:#444;" onclick="backToMenu()">Zurück zum Menü</button>
     </div>
 </div>
 
@@ -92,8 +101,46 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
 
+    const PW_HEDDESHEIM = "68542";
+    const PW_SCHRIESHEIM = "06220";
+
     let deviceID = localStorage.getItem("quiz_device_id") || 'dev_' + Math.random().toString(36).substr(2, 9);
     localStorage.setItem("quiz_device_id", deviceID);
+
+    // Passwort-Logik
+    window.onload = function() {
+        const savedPw = localStorage.getItem('active_pw');
+        if (savedPw) {
+            applyAccess(savedPw);
+        }
+    };
+
+    function checkPassword() {
+        const input = document.getElementById('pw-input').value;
+        if (input === PW_HEDDESHEIM || input === PW_SCHRIESHEIM) {
+            localStorage.setItem('active_pw', input);
+            applyAccess(input);
+        } else {
+            alert("Falsches Passwort!");
+        }
+    }
+
+    function applyAccess(pw) {
+        document.getElementById('password-area').classList.add('hidden');
+        document.getElementById('login-area').classList.remove('hidden');
+        const name = (pw === PW_HEDDESHEIM) ? "Heddesheim" : "Schriesheim";
+        document.getElementById('portal-title').innerText = "Feuerwehr " + name;
+    }
+
+    function logout() {
+        localStorage.removeItem('active_pw');
+        location.reload();
+    }
+
+    function backToMenu() {
+        document.getElementById("leaderboard-view").style.display = "none";
+        document.getElementById("login-area").style.display = "block";
+    }
 
     const catalogs = {
         mannschaft: [{ id: 1, q: " Wer ist nach dem Feuerwehrgesetz Baden-Württemberg für die Aufstellung, Ausrüstung und Unterhaltung der Feuerwehr verantwortlich?", o: {a: "Bund", b: "Land", c: "Kreis", d: "Gemeinde", e: "Kommandant"}, a: ["d"] },
@@ -134,7 +181,7 @@
         { id: 36, q: " Welche Warnausrüstungen werden im Allgemeinen zur Einsatzstellenabsicherung verwendet?", o: {a: "Elektronenblitz-Warngerät", b: "Verkehrsleitkegel mit Reflex-Folie", c: "Verkehrszeichen „Gefahrstelle“", d: "Warndreieck, Winkerkelle beleuchtet", e: "Warnflagge, Warnleuchte", f: "Leitbake (Warnbake)", g: "Signalleine", h: "Absperrleine (Flatterleine)"}, a: ["a", "b", "d", "e", "h"] },
         { id: 37, q: " Was müssen Sie beachten bei der Benutzung beziehungsweise beim In-Stellung-Bringen von tragbaren Leitern?", o: {a: "Fester Untergrund", b: "Anstellwinkel 55° bis 60°", c: "Leiterspitze ca. ein Meter über die Brüstung", d: "Abstand des Fußteils ca. vier Meter von der Wand", e: "Haken- und Klappleitern dürfen nur von einer Person bestiegen werden", f: "Bei Schiebleitern die Fallhaken auf richtigen Sitz prüfen", g: "Anstellwinkel bei Steckleitern ca. 65° bis 75°", h: "Leitern mit Stützstangen dürfen im Freistand nur drei Meter über die Stützen hinaus bestiegen werden"}, a: ["a", "c", "e", "f", "g"] },
         { id: 38, q: " Welche Leiter führt ein Löschgruppenfahrzeug LF 10 nach Norm mit sich?", o: {a: "Steckleiter 2-teilig", b: "Steckleiter 4-teilig", c: "Schiebleiter 3-teilig", d: "Hakenleiter", e: "Klappleiter", f: "Strickleiter"}, a: ["b"] },
-        { id: 39, q: " Wie viel Feuerwehrangehörige (ohne Maschinist) werden benötigt, um eine 4-teilige Steckleiter nach Feuerwehr-Dienstvorschrift 10 „Tragbare Leitern“ in Stellung zu bringen?", o: {a: "Zwei Personen", b: "Drei Personen", c: "Drei oder vier Personen", d: "Dier Personen", e: "Staffelbesatzung"}, a: ["b", "c", "d"] },
+        { id: 39, q: " Wie viel Feuerwehrangehörige (ohne Maschinist) werden benötigt, um eine 4-teilige Steckleiter nach Feuerwehr-Dienstvorschrift 10 „Tragbare Leitern“ in Stellung zu bringen?", o: {a: "Zwei Personen", b: "Drei Personen", c: "Drei oder vier Personen", d: "Vier Personen", e: "Staffelbesatzung"}, a: ["b", "c", "d"] },
         { id: 40, q: " Druckschläuche zur Förderung von Wasser sind genormt. Bezüglich der Maße sind welche Aus- sagen richtig?", o: {a: "Druckschlauch D = 5 m lang, Ø 25 mm", b: "Druckschlauch D = 20 m lang, Ø 25 mm", c: "Druckschlauch C = 15 m lang, Ø 42 mm", d: "Druckschlauch C = 15 m lang, Ø 52 mm", e: "Druckschlauch C = 30 m lang, Ø 42 mm", f: "Druckschlauch B = 5 m lang, Ø 75 mm", g: "Druckschlauch B = 15 m lang, Ø 75 mm", h: "Druckschlauch B = 20 m lang, Ø 75 mm", i: "Druckschlauch A = 10 m lang, Ø 100 mm", j: "Druckschlauch A = 20 m lang, Ø 110 mm"}, a: ["a", "c", "d", "e", "f", "h", "j"] },
         { id: 41, q: " Welche der folgenden Armaturen gehören zur Gruppe: „Armaturen zur Wasserfortleitung“?", o: {a: "Stützkrümmer", b: "Kupplungen", c: "Druckbegrenzungsventil", d: "Standrohr", e: "Verteiler", f: "Sammelstück"}, a: ["b", "c", "e", "f"] },
         { id: 42, q: " An welchem Abgang wird ein Sonderrohr am Verteiler angekuppelt?", o: {a: "Links", b: "Rechts", c: "Mitte", d: "Wird separat verlegt und nicht am Verteiler angekuppelt"}, a: ["c"] },
@@ -377,7 +424,8 @@
         const wrong = total - score;
         const percent = Math.round((score / total) * 100);
         const datum = new Date().toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
-        
+        const activePw = localStorage.getItem('active_pw'); // Raum merken
+
         document.getElementById("progress").style.display = "none";
         document.getElementById("abort-btn").style.display = "none";
         const quizBox = document.getElementById("quiz-box");
@@ -393,7 +441,7 @@
                 </div>
                 <p style="color: #666; font-size: 0.9em;">Dein Ergebnis wurde gespeichert.</p>
                 <button onclick="showGlobalLeaderboard()">Zur Bestenliste</button>
-                <button style="background:#666; margin-top:10px;" onclick="location.reload()">Zum Hauptmenü</button>
+                <button style="background:#666; margin-top:10px;" onclick="backToMenu()">Zum Hauptmenü</button>
             </div>
         `;
 
@@ -402,13 +450,14 @@
             let data = snapshot.val() || { name: currentPlayer };
             if(!data.counts) data.counts = {t1:0, t2:0, t3:0};
             if(!data.dates) data.dates = {t1:'', t2:'', t3:''};
-            if(!data.lasts) data.lasts = {t1:0, t2:0, t3:0}; // Neu: Letztes Ergebnis
+            if(!data.lasts) data.lasts = {t1:0, t2:0, t3:0}; 
             
             data.name = currentPlayer;
+            data.room = activePw; // Raum-Zuordnung speichern
             data['t' + currentPart] = Math.max(data['t' + currentPart] || 0, percent);
             data.counts['t' + currentPart] = (data.counts['t' + currentPart] || 0) + 1;
             data.dates['t' + currentPart] = datum;
-            data.lasts['t' + currentPart] = percent; // Aktueller Score als letztes Ergebnis
+            data.lasts['t' + currentPart] = percent;
 
             const div = (currentCategory === 'mannschaft') ? 3 : 2;
             data.total = Math.round(((data.t1 || 0) + (data.t2 || 0) + (data.t3 || 0)) / div);
@@ -417,16 +466,23 @@
     }
 
     function showGlobalLeaderboard() {
+        const activePw = localStorage.getItem('active_pw');
         document.getElementById("login-area").style.display = "none";
         document.getElementById("quiz-area").style.display = "none";
         document.getElementById("leaderboard-view").style.display = "block";
+        
         database.ref('leaderboard').once('value', (snapshot) => {
             const allData = snapshot.val();
             let html = "";
             ['mannschaft', 'maschinist', 'gruppenfuehrer'].forEach(cat => {
                 html += `<div class="leaderboard"><h3>🚒 ${cat.toUpperCase()}</h3>`;
                 let entries = [];
-                for (let id in allData) { if (allData[id][cat]) entries.push(allData[id][cat]); }
+                for (let id in allData) { 
+                    // FILTER: Nur Einträge anzeigen, die zum aktuellen Passwort-Raum gehören
+                    if (allData[id][cat] && allData[id][cat].room === activePw) {
+                        entries.push(allData[id][cat]);
+                    } 
+                }
                 entries.sort((a, b) => b.total - a.total);
                 entries.forEach((e, i) => {
                     html += `<div class="entry"><b>${i+1}. ${e.name}</b><br>`;
@@ -440,6 +496,7 @@
                     });
                     html += `<span class="score-bold">Gesamt-Schnitt: ${e.total || 0}%</span></div>`;
                 });
+                if (entries.length === 0) html += `<p style="font-size:0.8em; color:#999;">Noch keine Einträge vorhanden.</p>`;
                 html += `</div>`;
             });
             document.getElementById("leaderboard-list").innerHTML = html;
