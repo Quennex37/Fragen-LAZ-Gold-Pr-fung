@@ -43,10 +43,8 @@
             border-radius: 15px; 
             box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
             position: relative;
-            padding-top: 50px; /* Platz für den oberen Button */
+            padding-top: 50px;
         }
-        
-        h2 { color: #d32f2f; margin-top: 10px; text-align: center; font-size: 1.4em; }
         
         .dark-mode-toggle { 
             width: auto; 
@@ -58,11 +56,15 @@
             top: 10px; 
             border-radius: 20px; 
             z-index: 10;
+            color: white;
+            border: none;
         }
 
-        .name-section { margin-bottom: 20px; text-align: center; }
+        h2 { color: #d32f2f; margin-top: 10px; text-align: center; font-size: 1.4em; }
+
+        .name-section { margin: 15px 0 25px 0; text-align: center; }
         #user-name { width: 100%; padding: 15px; border-radius: 10px; border: 1px solid #ccc; font-size: 16px; background: #eee; text-align: center; }
-        .name-edit-btn { background: #666; font-size: 0.8em; padding: 8px 15px; width: auto; margin-top: 8px; display: inline-block; }
+        .name-edit-btn { background: #666; font-size: 0.85em; padding: 10px 20px; width: auto; margin-top: 10px; display: inline-block; color: white; border-radius: 8px; border: none; font-weight: bold; }
 
         .progress { font-size: 0.85em; color: #777; margin-bottom: 10px; font-weight: bold; text-align: center; }
         .question-text { font-weight: bold; margin-bottom: 15px; display: block; font-size: 1.1em; line-height: 1.3; }
@@ -77,7 +79,6 @@
             position: relative; 
             border: 1px solid var(--border-color); 
             min-height: 50px; 
-            font-size: 0.95em; 
         }
         
         .option input { position: absolute; left: 12px; top: 14px; width: 22px; height: 22px; }
@@ -100,7 +101,7 @@
         
         .cat-label { font-weight: bold; margin-top: 12px; display: block; color: #d32f2f; font-size: 0.85em; text-transform: uppercase; }
         .hidden { display: none !important; }
-        .logout-btn { background: transparent; color: #888; font-size: 0.8em; text-decoration: underline; margin-top: 20px; padding: 5px; }
+        .logout-btn { background: transparent; color: #888; font-size: 0.8em; text-decoration: underline; margin-top: 20px; padding: 5px; border: none; cursor: pointer; width: auto; }
     </style>
 </head>
 <body>
@@ -147,7 +148,7 @@
 
             <hr style="border:0; border-top:1px solid #ddd; margin: 20px 0;">
             <button style="background: #2c3e50;" onclick="showGlobalLeaderboard()">🏆 Bestenliste ansehen</button>
-            <button class="logout-btn" onclick="logout()">Abmelden & Passwort-Login</button>
+            <center><button class="logout-btn" onclick="logout()">Abmelden & Passwort-Login</button></center>
         </div>
     </div>
 
@@ -445,7 +446,7 @@
     function applyAccess(pw) {
         document.getElementById('password-area').classList.add('hidden');
         document.getElementById('login-area').classList.remove('hidden');
-        document.getElementById('portal-title').innerText = "Feuerwehr " + (pw === PW_HEDDESHEIM ? "Heddesheim" : "Schriesheim") + "";
+        document.getElementById('portal-title').innerText = "Feuerwehr " + (pw === PW_HEDDESHEIM ? "Heddesheim" : "Schriesheim");
     }
 
     function logout() {
@@ -553,10 +554,8 @@
             
             ['mannschaft', 'maschinist', 'gruppenfuehrer'].forEach(cat => {
                 html += `<div class="leaderboard"><h3>🚒 ${cat.toUpperCase()}</h3>`;
-                
                 let mergedEntries = {};
 
-                // Zusammenführen der alten und neuen Daten
                 for (let id in rawData) {
                     const entry = rawData[id][cat];
                     if (entry && entry.room === activePw) {
@@ -564,13 +563,17 @@
                         if (!mergedEntries[nameKey]) {
                             mergedEntries[nameKey] = JSON.parse(JSON.stringify(entry));
                         } else {
-                            // Werte kombinieren
                             const me = mergedEntries[nameKey];
                             ['t1', 't2', 't3', 'exam'].forEach(k => {
+                                // Behalte den absoluten Bestwert
                                 me[k] = Math.max(me[k] || 0, entry[k] || 0);
-                                me.counts[k] = (me.counts[k] || 0) + (entry.counts ? entry.counts[k] : 0);
+                                // Addiere die Versuche
+                                if(!me.counts) me.counts = {t1:0, t2:0, t3:0, exam:0};
+                                me.counts[k] = (me.counts[k] || 0) + (entry.counts ? (entry.counts[k] || 0) : 0);
+                                // Das neueste Datum und den letzten Wert übernehmen (falls vorhanden)
+                                if(entry.dates && entry.dates[k]) me.dates[k] = entry.dates[k];
+                                if(entry.lasts && entry.lasts[k] !== undefined) me.lasts[k] = entry.lasts[k];
                             });
-                            // Gesamtschnitt neu berechnen
                             const div = (cat === 'mannschaft') ? 3 : 2;
                             me.total = Math.round(((me.t1 || 0) + (me.t2 || 0) + (me.t3 || 0)) / div);
                         }
@@ -581,10 +584,18 @@
                     html += `<div class="entry"><b>${i+1}. ${e.name}</b><br>`;
                     [1, 2, 3].forEach(p => {
                         if(cat !== 'mannschaft' && p === 3) return;
-                        const s = e['t'+p] || 0;
-                        const c = (e.counts && e.counts['t'+p]) ? e.counts['t'+p] : 0;
-                        html += `<span class="score-info">Teil ${p}: 🏆 ${s}% | Versuche: ${c}</span>`;
+                        const key = 't' + p;
+                        const best = e[key] || 0;
+                        const last = (e.lasts && e.lasts[key] !== undefined) ? e.lasts[key] : '-';
+                        const count = (e.counts && e.counts[key]) ? e.counts[key] : 0;
+                        const date = (e.dates && e.dates[key]) ? e.dates[key] : '-';
+                        html += `<span class="score-info">Teil ${p}: 🏆 ${best}% | Letztes: ${last}% | Versuche: ${count} (${date})</span>`;
                     });
+                    const exBest = e.exam || 0;
+                    const exLast = (e.lasts && e.lasts.exam !== undefined) ? e.lasts.exam : '-';
+                    const exCount = (e.counts && e.counts.exam) ? e.counts.exam : 0;
+                    const exDate = (e.dates && e.dates.exam) ? e.dates.exam : '-';
+                    html += `<span class="score-info" style="color:#e67e22; font-weight:bold;">Prüfung: Best: ${exBest}% | Letzte: ${exLast}% (${exCount}x, ${exDate})</span>`;
                     html += `<span class="score-bold">Gesamt-Schnitt: ${e.total || 0}%</span></div>`;
                 });
                 html += `</div>`;
