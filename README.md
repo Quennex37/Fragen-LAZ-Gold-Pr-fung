@@ -543,7 +543,7 @@
         });
     }
 
-    function showGlobalLeaderboard() {
+        function showGlobalLeaderboard() {
         const activePw = localStorage.getItem('active_pw');
         document.getElementById("login-area").style.display = "none";
         document.getElementById("leaderboard-view").style.display = "block";
@@ -552,6 +552,16 @@
             const rawData = snapshot.val();
             let html = "";
             
+            // Hilfsfunktion um deutsches Datum "DD.MM.YYYY, HH:MM" in ein vergleichbares Objekt zu wandeln
+            const parseDate = (str) => {
+                if(!str || str === '-') return 0;
+                const [d, t] = str.split(', ');
+                const [day, month] = d.split('.');
+                const [hour, min] = t.split(':');
+                // Jahr wird auf 2026 gesetzt (wie im System), wichtig ist der relative Vergleich
+                return new Date(2026, month - 1, day, hour, min).getTime();
+            };
+
             ['mannschaft', 'maschinist', 'gruppenfuehrer'].forEach(cat => {
                 html += `<div class="leaderboard"><h3>🚒 ${cat.toUpperCase()}</h3>`;
                 let mergedEntries = {};
@@ -565,14 +575,23 @@
                         } else {
                             const me = mergedEntries[nameKey];
                             ['t1', 't2', 't3', 'exam'].forEach(k => {
-                                // Behalte den absoluten Bestwert
+                                // 1. Bestwert bleibt das Maximum
                                 me[k] = Math.max(me[k] || 0, entry[k] || 0);
-                                // Addiere die Versuche
+                                
+                                // 2. Versuche werden addiert
                                 if(!me.counts) me.counts = {t1:0, t2:0, t3:0, exam:0};
                                 me.counts[k] = (me.counts[k] || 0) + (entry.counts ? (entry.counts[k] || 0) : 0);
-                                // Das neueste Datum und den letzten Wert übernehmen (falls vorhanden)
-                                if(entry.dates && entry.dates[k]) me.dates[k] = entry.dates[k];
-                                if(entry.lasts && entry.lasts[k] !== undefined) me.lasts[k] = entry.lasts[k];
+                                
+                                // 3. NEU: Datum und "Letzter Wert" nur nehmen, wenn der neue Eintrag NEUER ist
+                                const existingDateVal = parseDate(me.dates ? me.dates[k] : '-');
+                                const newDateVal = parseDate(entry.dates ? entry.dates[k] : '-');
+
+                                if (newDateVal > existingDateVal) {
+                                    if(!me.dates) me.dates = {};
+                                    if(!me.lasts) me.lasts = {};
+                                    me.dates[k] = entry.dates[k];
+                                    me.lasts[k] = entry.lasts[k];
+                                }
                             });
                             const div = (cat === 'mannschaft') ? 3 : 2;
                             me.total = Math.round(((me.t1 || 0) + (me.t2 || 0) + (me.t3 || 0)) / div);
@@ -603,6 +622,7 @@
             document.getElementById("leaderboard-list").innerHTML = html;
         });
     }
+
 
     function backToMenu() { document.getElementById("leaderboard-view").style.display = "none"; document.getElementById("login-area").style.display = "block"; }
     function confirmAbort() { if (confirm("Quiz abbrechen?")) location.reload(); }
