@@ -545,23 +545,20 @@
     }
 
     function finishQuiz() {
-        const total = currentQuestions.length;
-        let percent = Math.round((score / total) * 100);
-
-        // Max 99% für Dana / Geräte mit gespeicherter Sperre
-        if (currentPlayer.trim().toLowerCase() === "dana" || localStorage.getItem("is_dana_capped") === "true") {
-            localStorage.setItem("is_dana_capped", "true");
-            if (percent > 99) {
-                percent = 99;
-            }
+        const name = document.getElementById('user-name').value.trim() || 'Anonym';
+        // 1. Nutzt 'score' statt 'userScore'
+        let percent = Math.round((score / currentQuestions.length) * 100);
+        
+        // 2. Begrenzt das Ergebnis exklusiv für "Dana" auf maximal 99 %
+        if (name.toLowerCase() === 'dana' && percent > 99) {
+            percent = 99;
         }
 
-        const datum = new Date().toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-        const activePw = localStorage.getItem('active_pw');
-
-        document.getElementById("quiz-box").innerHTML = `<div style="text-align:center;"><h3>Ergebnis</h3><div style="font-size: 3em; font-weight: bold; color: ${percent >= 50 ? '#28a745' : '#d32f2f'};">${percent}%</div><button onclick="location.reload()">Hauptmenü</button></div>`;
+        const now = new Date();
+        const datum = now.toLocaleDateString('de-DE') + ', ' + now.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'});
 
         const devId = getDeviceId();
+        const activePw = localStorage.getItem('active_pw');
         const userRef = database.ref(`leaderboard/${devId}/${currentCategory}`);
         
         userRef.once('value', (snapshot) => {
@@ -580,9 +577,16 @@
             
             const div = (currentCategory === 'mannschaft') ? 3 : 2;
             data.total = Math.round(((data.t1 || 0) + (data.t2 || 0) + (data.t3 || 0)) / div);
-            userRef.set(data);
+            
+            userRef.set(data, () => {
+                alert(`Quiz beendet!\nErgebnis: ${percent}% (${score} von ${currentQuestions.length} richtig).`);
+                document.getElementById("quiz-area").style.display = "none";
+                document.getElementById("login-area").style.display = "block";
+            });
         });
     }
+
+            
 
     function showGlobalLeaderboard() {
         const activePw = localStorage.getItem('active_pw');
