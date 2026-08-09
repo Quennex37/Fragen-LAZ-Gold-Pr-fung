@@ -544,47 +544,43 @@
         else finishQuiz();
     }
 
+    
     function finishQuiz() {
-        const name = document.getElementById('user-name').value.trim() || 'Anonym';
-        // 1. Nutzt 'score' statt 'userScore'
         let percent = Math.round((score / currentQuestions.length) * 100);
-        
-        // 2. Begrenzt das Ergebnis exklusiv für "Dana" auf maximal 99 %
-        if (name.toLowerCase() === 'dana' && percent > 99) {
+
+        // Begrenzung für Dana auf maximal 99%
+        if (userName.trim().toLowerCase() === "dana" && percent > 99) {
             percent = 99;
         }
 
-        const now = new Date();
-        const datum = now.toLocaleDateString('de-DE') + ', ' + now.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'});
+        saveScore(percent);
 
-        const devId = getDeviceId();
-        const activePw = localStorage.getItem('active_pw');
-        const userRef = database.ref(`leaderboard/${devId}/${currentCategory}`);
-        
-        userRef.once('value', (snapshot) => {
-            let data = snapshot.val() || { name: currentPlayer, room: activePw, devId: devId };
-            data.name = currentPlayer;
-            data.room = activePw;
-            if(!data.counts) data.counts = {t1:0, t2:0, t3:0, exam:0};
-            if(!data.dates) data.dates = {t1:'', t2:'', t3:'', exam:''};
-            if(!data.lasts) data.lasts = {t1:0, t2:0, t3:0, exam:0}; 
-            
-            const key = currentPart === 'exam' ? 'exam' : 't' + currentPart;
-            data[key] = Math.max(data[key] || 0, percent);
-            data.counts[key] = (data.counts[key] || 0) + 1;
-            data.dates[key] = datum;
-            data.lasts[key] = percent;
-            
-            const div = (currentCategory === 'mannschaft') ? 3 : 2;
-            data.total = Math.round(((data.t1 || 0) + (data.t2 || 0) + (data.t3 || 0)) / div);
-            
-            userRef.set(data, () => {
-                alert(`Quiz beendet!\nErgebnis: ${percent}% (${score} von ${currentQuestions.length} richtig).`);
-                document.getElementById("quiz-area").style.display = "none";
-                document.getElementById("login-area").style.display = "block";
-            });
-        });
+        document.getElementById("quiz-area").style.display = "none";
+        document.getElementById("leaderboard-view").style.display = "block";
+        document.getElementById("leaderboard-title").innerText = `Ergebnis: ${score}/${currentQuestions.length} (${percent}%)`;
+        loadLeaderboard();
     }
+
+    function saveScore(percent) {
+        if (!userName) return;
+
+        let displayPercent = percent;
+        if (userName.trim().toLowerCase() === "dana" && displayPercent > 99) {
+            displayPercent = 99;
+        }
+
+        const entry = {
+            name: userName,
+            category: currentCategory,
+            mode: currentMode,
+            score: score,
+            total: currentQuestions.length,
+            percent: displayPercent,
+            timestamp: Date.now()
+        };
+        database.ref("leaderboard").push(entry);
+    }
+
 
             
 
