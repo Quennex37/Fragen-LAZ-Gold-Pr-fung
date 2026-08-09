@@ -397,270 +397,233 @@
         { id: 59, q: " Welcher Abstand ist bis zur Festlegung der Absperrgrenze für nicht unmittelbar am Einsatz be-\nteiligte Einsatzkräfte bei Unfällen mit radioaktiven Stoffen vom Schadensobjekt einzuhalten?", o: {a: "10 Meter", b: "25 Meter", c: "50 Meter"}, a: ["c"] },
         { id: 60, q: " Bereiche mit ABC-Gefahrstoffen werden bei der Einsatzvorbereitung entsprechend den auszu-\nführenden Maßnahmen in drei Gefahrengruppen eingeteilt. Welche Zuordnung ist richtig?", o: {a: "Gefahrengruppe I - Bereiche, in denen die Einsatzkräfte nur mit Sonderausrüstung und unter besonderer Über-\nwachung und Dekontamination/Hygiene tätig werden dürfen", b: "Gefahrengruppe II - Bereiche, in denen die Einsatzkräfte ohne Sonderausrüstung tätig werden dürfen. Zur\nVermeidung einer Inkorporation soll jedoch Atemschutz getragen werden", c: "Gefahrengruppe III - Bereiche, in denen Einsatzkräfte nur mit Sonderausrüstung und unter besonderer Über-\nnwachung und Dekontamination/Hygiene tätig werden dürfen und deren Eigenart die Anwesenheit einer fach-\nkundigen Person notwendig macht, die während des Einsatzes die entstehende Gefährdung und die anzuwen-\ndenden Schutzmaßnahmen beurteilen kann"}, a: ["c"] }
         ]
-    };
+    
 
 <script>
-    function getDeviceId() {
-        let id = localStorage.getItem('quiz_device_id');
-        if (!id) {
-            id = 'dev-' + Math.random().toString(36).substr(2, 9);
-            localStorage.setItem('quiz_device_id', id);
-        }
-        return id;
-    }
+let currentCatalog = [];
+let currentQuestionIndex = 0;
+let score = 0;
+let userAnswers = [];
+let userName = localStorage.getItem("fw_user_name") || "";
+let currentMode = ""; 
+let currentPart = null;
 
-    function toggleDarkMode() {
-        document.body.classList.toggle('dark-mode');
-        localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
-    }
-    if(localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark-mode');
-
-    window.onload = () => { 
-        if(localStorage.getItem('active_pw')) applyAccess(localStorage.getItem('active_pw')); 
-        const savedName = localStorage.getItem("quiz_user_name");
-        if(savedName) {
-            document.getElementById("user-name").value = savedName;
+document.addEventListener("DOMContentLoaded", () => {
+    if (localStorage.getItem("fw_authenticated") === "true") {
+        document.getElementById("password-area").classList.add("hidden");
+        document.getElementById("login-area").classList.remove("hidden");
+        if (userName) {
+            document.getElementById("user-name").value = userName;
         } else {
             enableNameChange();
         }
+    }
+    if (localStorage.getItem("fw_dark_mode") === "true") {
+        document.body.classList.add("dark-mode");
+    }
+});
+
+function toggleDarkMode() {
+    document.body.classList.toggle("dark-mode");
+    localStorage.setItem("fw_dark_mode", document.body.classList.contains("dark-mode"));
+}
+
+function checkPassword() {
+    const pw = document.getElementById("pw-input").value;
+    if (pw === PW_HEDDESHEIM || pw === PW_SCHRIESHEIM) {
+        localStorage.setItem("fw_authenticated", "true");
+        document.getElementById("password-area").classList.add("hidden");
+        document.getElementById("login-area").classList.remove("hidden");
+        if (!userName) enableNameChange();
+    } else {
+        alert("Falsches Passwort!");
+    }
+}
+
+function logout() {
+    localStorage.removeItem("fw_authenticated");
+    location.reload();
+}
+
+function enableNameChange() {
+    const input = document.getElementById("user-name");
+    input.removeAttribute("readonly");
+    input.focus();
+    const btn = document.getElementById("edit-btn");
+    btn.innerText = "Speichern";
+    btn.onclick = saveName;
+}
+
+function saveName() {
+    const input = document.getElementById("user-name");
+    if (input.value.trim() === "") {
+        alert("Bitte gib einen Namen ein!");
+        return;
+    }
+    userName = input.value.trim();
+    localStorage.setItem("fw_user_name", userName);
+    input.setAttribute("readonly", true);
+    const btn = document.getElementById("edit-btn");
+    btn.innerText = "Namen ändern";
+    btn.onclick = enableNameChange;
+}
+
+function preStart(catKey, part) {
+    if (!userName) {
+        alert("Bitte zuerst einen Namen eingeben und speichern!");
+        return;
+    }
+    currentMode = catKey;
+    currentPart = part;
+    let fullList = catalogs[catKey];
+
+    if (part === "exam") {
+        currentCatalog = [...fullList].sort(() => 0.5 - Math.random()).slice(0, 30);
+    } else {
+        const chunkSize = 30;
+        const start = (part - 1) * chunkSize;
+        currentCatalog = fullList.slice(start, start + chunkSize);
+    }
+
+    currentQuestionIndex = 0;
+    score = 0;
+    document.getElementById("login-area").classList.add("hidden");
+    document.getElementById("quiz-area").style.display = "block";
+    showQuestion();
+}
+
+function showQuestion() {
+    const qData = currentCatalog[currentQuestionIndex];
+    document.getElementById("progress").innerText = `Frage ${currentQuestionIndex + 1} von ${currentCatalog.length}`;
+    document.getElementById("question-display").innerText = qData.q;
+    
+    const optionsDiv = document.getElementById("options-display");
+    optionsDiv.innerHTML = "";
+    
+    const isMulti = qData.a.length > 1;
+
+    Object.keys(qData.o).forEach(key => {
+        const label = document.createElement("label");
+        label.className = "option";
+        const inputType = isMulti ? "checkbox" : "radio";
+        label.innerHTML = `<input type="${inputType}" name="quiz-opt" value="${key}"> ${key.toUpperCase()}: ${qData.o[key]}`;
+        optionsDiv.appendChild(label);
+    });
+
+    document.getElementById("feedback").style.display = "none";
+    document.getElementById("check-btn").style.display = "block";
+    document.getElementById("next-btn").style.display = "none";
+}
+
+function checkAnswer() {
+    const selected = Array.from(document.querySelectorAll('input[name="quiz-opt"]:checked')).map(el => el.value);
+    if (selected.length === 0) {
+        alert("Bitte wähle mindestens eine Antwort aus!");
+        return;
+    }
+
+    const correctAns = currentCatalog[currentQuestionIndex].a.sort();
+    selected.sort();
+
+    const isCorrect = JSON.stringify(selected) === JSON.stringify(correctAns);
+    const feedback = document.getElementById("feedback");
+    feedback.style.display = "block";
+
+    if (isCorrect) {
+        score++;
+        feedback.className = "correct";
+        feedback.innerText = "Richtig!";
+    } else {
+        feedback.className = "wrong";
+        feedback.innerText = `Falsch! Richtige Antwort(en): ${correctAns.join(", ").toUpperCase()}`;
+    }
+
+    document.getElementById("check-btn").style.display = "none";
+    document.getElementById("next-btn").style.display = "block";
+}
+
+function nextQuestion() {
+    currentQuestionIndex++;
+    if (currentQuestionIndex < currentCatalog.length) {
+        showQuestion();
+    } else {
+        finishQuiz();
+    }
+}
+
+function finishQuiz() {
+    let finalScore = score;
+    const totalQuestions = currentCatalog.length;
+
+    // Begrenzung für den Namen "Dana" auf maximal 99 %
+    if (userName.trim().toLowerCase() === "dana") {
+        const maxAllowedScore = Math.floor(totalQuestions * 0.99);
+        if (finalScore > maxAllowedScore) {
+            finalScore = maxAllowedScore;
+        }
+    }
+
+    alert(`Quiz beendet! Du hast ${finalScore} von ${totalQuestions} Fragen richtig beantwortet.`);
+    
+    const entry = {
+        name: userName,
+        score: finalScore,
+        total: totalQuestions,
+        mode: currentMode,
+        part: currentPart,
+        timestamp: Date.now()
     };
+    
+    database.ref("leaderboard").push(entry);
+    backToMenu();
+}
 
-    function enableNameChange() {
-        const input = document.getElementById("user-name");
-        input.readOnly = false;
-        input.style.background = "#fff";
-        input.focus();
-        document.getElementById("edit-btn").innerText = "Name speichern";
-        document.getElementById("edit-btn").onclick = saveName;
+function confirmAbort() {
+    if (confirm("Möchtest du das Quiz wirklich abbrechen?")) {
+        backToMenu();
     }
+}
 
-    function saveName() {
-        const input = document.getElementById("user-name");
-        const val = input.value.trim();
-        if(!val) { alert("Bitte Namen eingeben!"); return; }
-        
-        // Speichere die Sperre, wenn der Name Dana ist
-        if (val.toLowerCase() === "dana") {
-            localStorage.setItem("is_dana_capped", "true");
-        }
+function backToMenu() {
+    document.getElementById("quiz-area").style.display = "none";
+    document.getElementById("leaderboard-view").style.display = "none";
+    document.getElementById("login-area").classList.remove("hidden");
+}
 
-        const oldName = localStorage.getItem("quiz_user_name");
-        localStorage.setItem("quiz_user_name", val);
-        const devId = getDeviceId();
+function showGlobalLeaderboard() {
+    document.getElementById("login-area").classList.add("hidden");
+    document.getElementById("leaderboard-view").style.display = "block";
+    const listDiv = document.getElementById("leaderboard-list");
+    listDiv.innerHTML = "Lade Ranking...";
 
-        // Bestehende Daten unter diesem Gerät in Firebase aktualisieren
-        ['mannschaft', 'maschinist', 'gruppenfuehrer'].forEach(cat => {
-            database.ref(`leaderboard/${devId}/${cat}`).update({ name: val });
-        });
+    database.ref("leaderboard").orderByChild("score").limitToLast(20).once("value", snapshot => {
+        listDiv.innerHTML = "";
+        let entries = [];
+        snapshot.forEach(child => { entries.push(child.val()); });
+        entries.reverse();
 
-        input.readOnly = true;
-        input.style.background = "#eee";
-        document.getElementById("edit-btn").innerText = "Namen ändern";
-        document.getElementById("edit-btn").onclick = enableNameChange;
-    }
-
-    function checkPassword() {
-        const input = document.getElementById('pw-input').value;
-        if (input === PW_HEDDESHEIM || input === PW_SCHRIESHEIM) {
-            localStorage.setItem('active_pw', input);
-            applyAccess(input);
-        } else alert("Falsches Passwort!");
-    }
-
-    function applyAccess(pw) {
-        document.getElementById('password-area').classList.add('hidden');
-        document.getElementById('login-area').classList.remove('hidden');
-        document.getElementById('portal-title').innerText = "Feuerwehr " + (pw === PW_HEDDESHEIM ? "Heddesheim" : "Schriesheim");
-    }
-
-    function logout() {
-        if (confirm("Abmelden? Du musst danach das Passwort neu eingeben.")) {
-            localStorage.removeItem('active_pw');
-            location.reload();
-        }
-    }
-
-    let currentQuestions = [], currentIndex = 0, score = 0, currentPlayer = "", currentCategory = "", currentPart = "";
-
-    function preStart(key, part) {
-        const nameInput = document.getElementById("user-name").value.trim();
-        if (!nameInput) {
-            alert("Bitte gib deinen Namen ein!");
+        if (entries.length === 0) {
+            listDiv.innerHTML = "Noch keine Einträge vorhanden.";
             return;
         }
-        localStorage.setItem("quiz_user_name", nameInput);
-        currentPlayer = nameInput;
 
-        // Sperre aktivieren, wenn Name Dana ist
-        if (nameInput.toLowerCase() === "dana") {
-            localStorage.setItem("is_dana_capped", "true");
-        }
+        entries.forEach(e => {
+            let displayScore = e.score;
 
-        currentCategory = key;
-        currentPart = part;
-        if (part === 'exam') {
-            currentQuestions = [...catalogs[key]].sort(() => 0.5 - Math.random()).slice(0, 30);
-        } else {
-            const startIdx = (part - 1) * 30;
-            currentQuestions = catalogs[key].slice(startIdx, startIdx + 30);
-        }
-        currentIndex = 0;
-        score = 0;
-        document.getElementById("login-area").style.display = "none";
-        document.getElementById("quiz-area").style.display = "block";
-        showQuestion();
-    }
-
-    function showQuestion() {
-        const q = currentQuestions[currentIndex];
-        document.getElementById("progress").innerText = `FRAGE ${currentIndex+1} VON ${currentQuestions.length}`;
-        document.getElementById("question-display").innerText = q.q;
-        let html = "";
-        for (let k in q.o) {
-            html += `<label class="option"><input type="checkbox" name="ans" value="${k}">${k.toUpperCase()}: ${q.o[k]}</label>`;
-        }
-        document.getElementById("options-display").innerHTML = html;
-        document.getElementById("feedback").style.display = "none";
-        document.getElementById("check-btn").style.display = "block";
-        document.getElementById("next-btn").style.display = "none";
-        window.scrollTo(0,0);
-    }
-
-    function checkAnswer() {
-        const q = currentQuestions[currentIndex];
-        const sel = Array.from(document.querySelectorAll('input[name="ans"]:checked')).map(c => c.value);
-        const isCorrect = sel.length === q.a.length && sel.every(v => q.a.includes(v));
-        const fb = document.getElementById("feedback");
-        fb.style.display = "block";
-        if (isCorrect) { score++; fb.innerText = "RICHTIG!"; fb.className = "correct"; }
-        else { fb.innerText = "FALSCH! Lösung: " + q.a.join(",").toUpperCase(); fb.className = "wrong"; }
-        document.getElementById("check-btn").style.display = "none";
-        document.getElementById("next-btn").style.display = "block";
-    }
-
-    function nextQuestion() {
-        currentIndex++;
-        if (currentIndex < currentQuestions.length) showQuestion();
-        else finishQuiz();
-    }
-
-    
-    function finishQuiz() {
-        let percent = Math.round((score / currentQuestions.length) * 100);
-
-        // Begrenzung für Dana auf maximal 99%
-        if (userName.trim().toLowerCase() === "dana" && percent > 99) {
-            percent = 99;
-        }
-
-        saveScore(percent);
-
-        document.getElementById("quiz-area").style.display = "none";
-        document.getElementById("leaderboard-view").style.display = "block";
-        document.getElementById("leaderboard-title").innerText = `Ergebnis: ${score}/${currentQuestions.length} (${percent}%)`;
-        loadLeaderboard();
-    }
-
-    function saveScore(percent) {
-        if (!userName) return;
-
-        let displayPercent = percent;
-        if (userName.trim().toLowerCase() === "dana" && displayPercent > 99) {
-            displayPercent = 99;
-        }
-
-        const entry = {
-            name: userName,
-            category: currentCategory,
-            mode: currentMode,
-            score: score,
-            total: currentQuestions.length,
-            percent: displayPercent,
-            timestamp: Date.now()
-        };
-        database.ref("leaderboard").push(entry);
-    }
-
-
-            
-
-    function showGlobalLeaderboard() {
-        const activePw = localStorage.getItem('active_pw');
-        document.getElementById("login-area").style.display = "none";
-        document.getElementById("leaderboard-view").style.display = "block";
-        
-        database.ref('leaderboard').once('value', (snapshot) => {
-            const rawData = snapshot.val();
-            let html = "";
-            
-            const parseDate = (str) => {
-                if(!str || str === '-' || str === '') return 0;
-                try {
-                    const parts = str.split(', ');
-                    const [day, month] = parts[0].split('.');
-                    const [hour, min] = parts[1].split(':');
-                    return new Date(2026, month - 1, day, hour, min).getTime();
-                } catch(e) { return 0; }
-            };
-
-            ['mannschaft', 'maschinist', 'gruppenfuehrer'].forEach(cat => {
-                html += `<div class="leaderboard"><h3>🚒 ${cat.toUpperCase()}</h3>`;
-                let mergedEntries = {};
-
-                for (let id in rawData) {
-                    const entry = rawData[id][cat];
-                    if (entry && entry.room === activePw) {
-                        const nameKey = entry.name.toLowerCase().trim();
-                        if (!mergedEntries[nameKey]) {
-                            mergedEntries[nameKey] = JSON.parse(JSON.stringify(entry));
-                        } else {
-                            const me = mergedEntries[nameKey];
-                            ['t1', 't2', 't3', 'exam'].forEach(k => {
-                                me[k] = Math.max(me[k] || 0, entry[k] || 0);
-                                if(!me.counts) me.counts = {t1:0, t2:0, t3:0, exam:0};
-                                me.counts[k] = (me.counts[k] || 0) + (entry.counts ? (entry.counts[k] || 0) : 0);
-                                
-                                const existingDateVal = parseDate(me.dates ? me.dates[k] : '-');
-                                const newDateVal = parseDate(entry.dates ? entry.dates[k] : '-');
-                                if (newDateVal > existingDateVal) {
-                                    if(!me.dates) me.dates = {};
-                                    if(!me.lasts) me.lasts = {};
-                                    me.dates[k] = entry.dates[k];
-                                    me.lasts[k] = entry.lasts[k];
-                                }
-                            });
-                            const div = (cat === 'mannschaft') ? 3 : 2;
-                            me.total = Math.round(((me.t1 || 0) + (me.t2 || 0) + (me.t3 || 0)) / div);
-                        }
-                    }
+            // Zusätzliche Absicherung für die Anzeige in der Bestenliste
+            if (e.name.trim().toLowerCase() === "dana") {
+                const maxAllowedScore = Math.floor(e.total * 0.99);
+                if (displayScore > maxAllowedScore) {
+                    displayScore = maxAllowedScore;
                 }
+            }
 
-                Object.values(mergedEntries).sort((a, b) => b.total - a.total).forEach((e, i) => {
-                    html += `<div class="entry"><b>${i+1}. ${e.name}</b><br>`;
-                    [1, 2, 3].forEach(p => {
-                        if(cat !== 'mannschaft' && p === 3) return;
-                        const key = 't' + p;
-                        const best = e[key] || 0;
-                        const last = (e.lasts && e.lasts[key] !== undefined) ? e.lasts[key] : '-';
-                        const count = (e.counts && e.counts[key]) ? e.counts[key] : 0;
-                        const date = (e.dates && e.dates[key]) ? e.dates[key] : '-';
-                        html += `<span class="score-info">Teil ${p}: 🏆 ${best}% | Letztes: ${last}% | Versuche: ${count} (${date})</span>`;
-                    });
-                    const exBest = e.exam || 0;
-                    const exLast = (e.lasts && e.lasts.exam !== undefined) ? e.lasts.exam : '-';
-                    const exCount = (e.counts && e.counts.exam) ? e.counts.exam : 0;
-                    const exDate = (e.dates && e.dates.exam) ? e.dates.exam : '-';
-                    html += `<span class="score-info" style="color:#e67e22; font-weight:bold;">Prüfung: Best: ${exBest}% | Letzte: ${exLast}% (${exCount}x, ${exDate})</span>`;
-                    html += `<span class="score-bold">Gesamt-Schnitt: ${e.total || 0}%</span></div>`;
-                });
-                html += `</div>`;
-            });
-            document.getElementById("leaderboard-list").innerHTML = html;
+            const div = document.createElement("div");
+            div.className = "entry";
+            div.innerHTML = `<strong>${e.name}</strong> - <span class="score-bold">${displayScore}/${e.total} Richtig</span>
+                             <span class="score-info">Kategorie: ${e.mode.toUpperCase()} (${e.part})</span>`;
+            listDiv.appendChild(div);
         });
-    }
-
-    function backToMenu() { document.getElementById("leaderboard-view").style.display = "none"; document.getElementById("login-area").style.display = "block"; }
-    function confirmAbort() { if (confirm("Quiz abbrechen?")) location.reload(); }
+    });
+}
 </script>
-</body>
-</html>
